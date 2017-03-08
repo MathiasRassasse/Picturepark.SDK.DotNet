@@ -42,11 +42,13 @@ namespace Picturepark.SDK.V1.Tests.Contracts
 		[JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
 		public string refId { get; set; }
 
-		// Usage for recursions
+		// Usage maily for recursions
 		[PictureparkSearch(Index = true, SimpleSearch = true, Boost = 10)]
+		[PictureparkContentRelation("RelationName", "{ 'Kind': 'TermFilter', 'Field': 'AssetType', Term: 'Bitmap' }")]
 		[PictureparkMaximumRecursion(MaxRecursion = 2)]
 		public Person Child { get; set; }
 
+		// Usage maily for recursions
 		[PictureparkSearch(Index = true, SimpleSearch = true, Boost = 10)]
 		[PictureparkMaximumRecursion(MaxRecursion = 3)]
 		public List<Person> Siblings { get; set; }
