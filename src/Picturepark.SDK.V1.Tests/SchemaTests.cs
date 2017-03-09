@@ -254,5 +254,30 @@ namespace Picturepark.SDK.V1.Tests
 			var generatedPersonSchema = await _client.Schemas.GetAsync(typeof(T).Name);
 			Assert.Contains(generatedPersonSchema.Types, i => i == SchemaType.List || i == SchemaType.Struct);
 		}
+
+		[Fact]
+		[Trait("Stack", "Schema")]
+		public async Task SchemaReferencing()
+		{
+			List<Type> listTypesToReference = new List<Type>() { typeof(Person), typeof(PersonDetails) };
+			List<Type> listExistingTypes = new List<Type>();
+
+			// Get classes from Picturepark-system & SDK-application
+
+
+			foreach (var type in listTypesToReference)
+			{
+				if (!listExistingTypes.Contains(type))
+				{
+					throw new Exception("Missing type exception.");
+				}
+			}
+
+			// If exception doesn't get thrown -> Create schemas ...
+			foreach (Type type in listTypesToReference)
+			{
+				//await ShouldCreateFromClassGeneric<type>();
+			}
+		}
 	}
 }
