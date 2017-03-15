@@ -7,6 +7,7 @@ using Picturepark.SDK.V1.Tests.Contracts;
 using Picturepark.SDK.V1.Contract;
 using Picturepark.SDK.V1.Tests.Fixtures;
 using Newtonsoft.Json;
+using System.Reflection;
 
 namespace Picturepark.SDK.V1.Tests
 {
@@ -165,7 +166,7 @@ namespace Picturepark.SDK.V1.Tests
 		[Trait("Stack", "Schema")]
 		public async Task ShouldCreateSchemaAndValidateFilter()
 		{
-			await ShouldCreateFromClassGeneric<SoccerPlayer>();
+			await ShouldCreateFromClassGeneric(typeof(SoccerPlayer));
 
 			var generatedSoccerPlayerSchema = await _client.Schemas.GetAsync("SoccerPlayer");
 
@@ -182,7 +183,7 @@ namespace Picturepark.SDK.V1.Tests
 		[Trait("Stack", "Schema")]
 		public async Task ShouldCreateSchemaAndValidateMultiline()
 		{
-			await ShouldCreateFromClassGeneric<Person>();
+			await ShouldCreateFromClassGeneric(typeof(Person));
 
 			string multilineString = "\"MultiLine\":true";
 
@@ -199,7 +200,7 @@ namespace Picturepark.SDK.V1.Tests
 		[Trait("Stack", "Schema")]
 		public async Task ShouldCreateSchemaAndValidateMaxRecursion()
 		{
-			await ShouldCreateFromClassGeneric<Person>();
+			await ShouldCreateFromClassGeneric(typeof(Person));
 		}
 
 		[Fact]
@@ -237,11 +238,11 @@ namespace Picturepark.SDK.V1.Tests
 			Assert.True(outString == schemaId);
 		}
 
-		public async Task ShouldCreateFromClassGeneric<T>() where T : class
+		public async Task ShouldCreateFromClassGeneric(Type type)
 		{
 			var schemas = new List<SchemaDetailViewItem>();
 
-			var childSchemas = _client.Schemas.GenerateSchemaFromPOCO(typeof(T), schemas, true);
+			var childSchemas = _client.Schemas.GenerateSchemaFromPOCO(type, schemas, true);
 
 			foreach (var schema in childSchemas)
 			{
@@ -251,7 +252,7 @@ namespace Picturepark.SDK.V1.Tests
 				}
 			}
 
-			var generatedPersonSchema = await _client.Schemas.GetAsync(typeof(T).Name);
+			var generatedPersonSchema = await _client.Schemas.GetAsync(type.Name);
 			Assert.Contains(generatedPersonSchema.Types, i => i == SchemaType.List || i == SchemaType.Struct);
 		}
 
@@ -262,9 +263,42 @@ namespace Picturepark.SDK.V1.Tests
 			List<Type> listTypesToReference = new List<Type>() { typeof(Person), typeof(PersonDetails) };
 			List<Type> listExistingTypes = new List<Type>();
 
-			// Get classes from Picturepark-system & SDK-application
+			// Get all types from SDK
+			Assembly assembly = typeof(Person).GetTypeInfo().Assembly;
 
+			foreach (Type type in assembly.GetTypes())
+			{
+				listExistingTypes.Add(type);
+			}
 
+			// Check in Picturepark
+			foreach (Type type in listTypesToReference)
+			{
+				string schemaName = type.Name;
+
+				var searchRequest = new SchemaSearchRequest
+				{
+					Limit = 20,
+					SearchString = schemaName
+				};
+
+				BaseResultOfSchemaViewItem result = await _client.Schemas.SearchAsync(searchRequest);
+
+				if (result.TotalResults < 1)
+				{
+					if (!listExistingTypes.Contains(type))
+					{
+						throw new Exception("Missing type exception.");
+					}
+				}
+
+				if (!listExistingTypes.Contains(type))
+				{
+					listExistingTypes.Add(type);
+				}
+			}
+
+			// Check if all needed types exist
 			foreach (var type in listTypesToReference)
 			{
 				if (!listExistingTypes.Contains(type))
@@ -273,10 +307,10 @@ namespace Picturepark.SDK.V1.Tests
 				}
 			}
 
-			// If exception doesn't get thrown -> Create schemas ...
+			// Create all necessary types
 			foreach (Type type in listTypesToReference)
 			{
-				//await ShouldCreateFromClassGeneric<type>();
+				await ShouldCreateFromClassGeneric(type);
 			}
 		}
 	}
