@@ -260,19 +260,22 @@ namespace Picturepark.SDK.V1.Tests
 		[Trait("Stack", "Schema")]
 		public async Task SchemaReferencing()
 		{
-			List<Type> listTypesToReference = new List<Type>() { typeof(Person), typeof(PersonDetails) };
+			List<Type> listTypesToUpdate = new List<Type>() { typeof(Person), typeof(PersonDetails) };
+			List<Type> listTypesToCreate = new List<Type>();
 			List<Type> listExistingTypes = new List<Type>();
 
-			// Get all types from SDK
+			listTypesToCreate.AddRange(listTypesToUpdate);
+
 			Assembly assembly = typeof(Person).GetTypeInfo().Assembly;
 
+			// Get all types from SDK
 			foreach (Type type in assembly.GetTypes())
 			{
 				listExistingTypes.Add(type);
 			}
 
 			// Check in Picturepark
-			foreach (Type type in listTypesToReference)
+			foreach (Type type in listTypesToUpdate)
 			{
 				string schemaName = type.Name;
 
@@ -291,6 +294,10 @@ namespace Picturepark.SDK.V1.Tests
 						throw new Exception("Missing type exception.");
 					}
 				}
+				else
+				{
+					listTypesToCreate.Remove(type);
+				}
 
 				if (!listExistingTypes.Contains(type))
 				{
@@ -299,7 +306,7 @@ namespace Picturepark.SDK.V1.Tests
 			}
 
 			// Check if all needed types exist
-			foreach (var type in listTypesToReference)
+			foreach (var type in listTypesToUpdate)
 			{
 				if (!listExistingTypes.Contains(type))
 				{
@@ -308,10 +315,12 @@ namespace Picturepark.SDK.V1.Tests
 			}
 
 			// Create all necessary types
-			foreach (Type type in listTypesToReference)
+			foreach (Type type in listTypesToCreate)
 			{
 				await ShouldCreateFromClassGeneric(type);
 			}
+
+			// Update with references here
 		}
 	}
 }
